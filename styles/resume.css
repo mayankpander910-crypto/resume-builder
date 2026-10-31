@@ -1,0 +1,657 @@
+/* ==========================================================================
+   Resume document stylesheet
+   Everything below is measured in CSS px (1px = 1/96in), which is the unit the
+   browser uses when printing. Preview and PDF therefore share one geometry.
+   ========================================================================== */
+
+.rp-root {
+  font-family: var(--rp-font);
+  color: var(--rp-text);
+  font-size: var(--rp-body);
+  line-height: var(--rp-lh);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+  font-variant-ligatures: none;
+}
+
+.rp-root *,
+.rp-root *::before,
+.rp-root *::after {
+  box-sizing: border-box;
+}
+
+.rp-page {
+  position: relative;
+  background: #ffffff;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.rp-page-inner {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ------------------------------------------------------------------ page chrome */
+
+.rp-band {
+  flex: none;
+  background: var(--rp-band);
+  color: var(--rp-band-text);
+}
+
+.rp-cols {
+  display: grid;
+  flex: 1;
+  min-height: 0;
+}
+
+.rp-col {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.rp-col--side {
+  background: var(--rp-tint);
+}
+
+.rp-col--side.is-tinted {
+  color: var(--rp-tint-text);
+}
+
+.rp-col--side.is-tinted .rp-entry-title,
+.rp-col--side.is-tinted .rp-skill-name,
+.rp-col--side.is-tinted .rp-strong,
+.rp-col--side.is-tinted .rp-summary {
+  color: var(--rp-tint-text);
+}
+
+.rp-col--side.is-tinted .rp-entry-sub,
+.rp-col--side.is-tinted .rp-muted,
+.rp-col--side.is-tinted .rp-entry-date,
+.rp-col--side.is-tinted .rp-tech,
+.rp-col--side.is-tinted .rp-desc {
+  color: var(--rp-tint-muted);
+}
+
+.rp-col--side.is-tinted .rp-sec-title {
+  color: var(--rp-tint-heading);
+  border-color: var(--rp-tint-rule);
+}
+
+.rp-col--side.is-tinted .rp-h--boxed .rp-sec-title {
+  background: var(--rp-heading-fill);
+}
+
+.rp-col--side.is-tinted .rp-bullets li::before {
+  color: var(--rp-tint-accent);
+}
+
+.rp-col--side.is-tinted .rp-chip {
+  background: transparent;
+  border-color: var(--rp-tint-rule);
+  color: var(--rp-tint-text);
+}
+
+.rp-col--side.is-tinted .rp-dot {
+  background: var(--rp-tint-rule);
+}
+
+.rp-col--side.is-tinted .rp-dot.is-on {
+  background: var(--rp-tint-accent);
+}
+
+.rp-col--side.is-tinted .rp-skill-row {
+  border-bottom-color: var(--rp-tint-rule);
+}
+
+.rp-col--ruled {
+  border-left: var(--rp-rule-width) solid var(--rp-rule-color);
+}
+
+/* ------------------------------------------------------------------ masthead */
+
+.rp-head {
+  flex: none;
+  display: flex;
+  gap: 18px;
+  padding-bottom: calc(var(--rp-sec-gap) * 0.85);
+  border-bottom: var(--rp-head-rule-width) solid var(--rp-rule-color);
+}
+
+.rp-head.has-band {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.rp-head--center {
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.rp-head--split {
+  align-items: flex-start;
+  justify-content: space-between;
+}
+
+.rp-head--band {
+  align-items: flex-end;
+  justify-content: space-between;
+  color: var(--rp-band-text);
+}
+
+.rp-head-main {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.rp-name {
+  font-family: var(--rp-headfont);
+  font-size: var(--rp-name);
+  line-height: 1.02;
+  letter-spacing: -0.015em;
+  font-weight: 700;
+  color: var(--rp-name-color);
+  margin: 0;
+}
+
+.rp-headline {
+  margin: 5px 0 0;
+  font-size: var(--rp-small);
+  color: var(--rp-muted);
+  letter-spacing: 0.01em;
+  max-width: 46em;
+}
+
+.rp-head--band .rp-headline {
+  color: var(--rp-band-muted);
+}
+
+.rp-contact {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 14px;
+  margin-top: 9px;
+  font-size: var(--rp-small);
+  color: var(--rp-muted);
+}
+
+.rp-head--split .rp-contact,
+.rp-head--band .rp-contact,
+.rp-head--grid .rp-contact {
+  margin-top: 0;
+  flex-direction: column;
+  gap: 3px;
+  align-items: flex-end;
+  text-align: right;
+  max-width: 46%;
+}
+
+.rp-head--band .rp-contact {
+  color: var(--rp-band-text);
+  opacity: 0.92;
+}
+
+.rp-head--center .rp-contact {
+  justify-content: center;
+}
+
+.rp-contact-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  white-space: nowrap;
+}
+
+.rp-contact-item svg {
+  width: 1.05em;
+  height: 1.05em;
+  flex: none;
+  opacity: 0.75;
+}
+
+.rp-contact-sep {
+  color: var(--rp-muted);
+  opacity: 0.45;
+}
+
+.rp-mono-tile {
+  width: calc(var(--rp-name) * 1.5);
+  height: calc(var(--rp-name) * 1.5);
+  flex: none;
+  display: grid;
+  place-items: center;
+  background: var(--rp-accent);
+  color: #fff;
+  font-family: var(--rp-headfont);
+  font-size: calc(var(--rp-name) * 0.5);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  border-radius: 2px;
+}
+
+.rp-photo {
+  width: calc(var(--rp-name) * 1.7);
+  height: calc(var(--rp-name) * 1.7);
+  border-radius: 50%;
+  object-fit: cover;
+  flex: none;
+}
+
+/* ------------------------------------------------------------------ sections */
+
+.rp-sec {
+  break-inside: avoid;
+  padding-top: var(--rp-sec-gap);
+}
+
+.rp-sec-title {
+  font-family: var(--rp-headfont);
+  font-size: var(--rp-heading);
+  font-weight: 700;
+  line-height: 1.15;
+  color: var(--rp-heading-color);
+  letter-spacing: var(--rp-heading-tracking);
+  margin: 0 0 var(--rp-heading-gap);
+  display: block;
+  text-transform: var(--rp-heading-transform, none);
+  font-variant: var(--rp-heading-variant, normal);
+}
+
+/* section heading variants */
+.rp-h--plain .rp-sec-title {
+  padding-bottom: 2px;
+}
+
+.rp-h--rule .rp-sec-title {
+  padding-bottom: 3px;
+  border-bottom: var(--rp-head-rule-width) solid var(--rp-heading-rule);
+}
+
+.rp-h--rule.is-strong .rp-sec-title {
+  border-bottom-width: 1.5px;
+  border-bottom-color: var(--rp-accent);
+}
+
+.rp-h--bar .rp-sec-title {
+  padding-left: 8px;
+  border-left: 3px solid var(--rp-accent);
+  line-height: 1.05;
+}
+
+.rp-h--boxed .rp-sec-title {
+  background: var(--rp-heading-fill);
+  padding: 3px 7px;
+  border-radius: 1px;
+  color: var(--rp-heading-color);
+}
+
+.rp-h--stacked .rp-sec-title {
+  margin-bottom: calc(var(--rp-heading-gap) + 3px);
+}
+
+.rp-h--stacked .rp-sec-title::after {
+  content: "";
+  display: block;
+  width: 26px;
+  border-top: 2px solid var(--rp-accent);
+  margin-top: 4px;
+}
+
+.rp-h--sidebar .rp-sec-title {
+  font-size: calc(var(--rp-heading) * 0.93);
+  letter-spacing: 0.12em;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--rp-rule-color);
+  opacity: 0.95;
+}
+
+.rp-sec--continued .rp-sec-title {
+  opacity: 0.72;
+}
+
+.rp-sec--continued .rp-sec-title::after {
+  content: " (continued)";
+  font-weight: 400;
+  font-size: 0.8em;
+  letter-spacing: 0;
+  text-transform: none;
+  opacity: 0.7;
+}
+
+/* ------------------------------------------------------------------ entries */
+
+.rp-entry {
+  break-inside: avoid;
+  padding-bottom: var(--rp-entry-gap);
+}
+
+.rp-entry:last-child {
+  padding-bottom: 0;
+}
+
+.rp-entry-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.rp-entry-title {
+  font-weight: 700;
+  color: var(--rp-title-color);
+  font-size: var(--rp-body);
+  line-height: 1.25;
+}
+
+.rp-entry-date {
+  max-width: 52%;
+  font-size: var(--rp-tiny);
+  color: var(--rp-muted);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+  padding-top: 1px;
+}
+
+.rp-entry-sub {
+  font-size: var(--rp-small);
+  color: var(--rp-muted);
+  margin-top: 1px;
+  line-height: 1.3;
+}
+
+.rp-entry-sub .rp-strong {
+  color: var(--rp-title-color);
+  font-weight: 600;
+}
+
+.rp-desc {
+  margin: 4px 0 0;
+  color: var(--rp-text);
+}
+
+.rp-bullets {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+}
+
+.rp-bullets li {
+  position: relative;
+  padding-left: 14px;
+  margin-bottom: 2.5px;
+}
+
+.rp-bullets li:last-child {
+  margin-bottom: 0;
+}
+
+.rp-bullets li::before {
+  position: absolute;
+  left: 1px;
+  top: 0;
+  color: var(--rp-bullet-color);
+  font-weight: 700;
+}
+
+.rp-bullets--disc li::before {
+  content: "•";
+  font-size: 1.05em;
+  left: 3px;
+}
+
+.rp-bullets--dash li::before {
+  content: "–";
+  left: 0;
+}
+
+.rp-bullets--square li::before {
+  content: "▪";
+  font-size: 0.85em;
+  left: 2px;
+  top: 0.12em;
+}
+
+.rp-bullets--none li {
+  padding-left: 0;
+}
+
+.rp-bullets--none li::before {
+  content: none;
+}
+
+.rp-tech {
+  margin-top: 3px;
+  font-size: var(--rp-tiny);
+  color: var(--rp-muted);
+  letter-spacing: 0.01em;
+}
+
+.rp-tech .rp-tech-label {
+  color: var(--rp-accent);
+  font-weight: 600;
+}
+
+.rp-link {
+  color: inherit;
+  text-decoration: none;
+  border-bottom: 0.5px solid var(--rp-rule-color);
+}
+
+/* summary */
+.rp-summary {
+  margin: 0;
+  color: var(--rp-text);
+}
+
+/* skills */
+.rp-skill-group {
+  margin-bottom: 4px;
+}
+
+.rp-skill-group:last-child {
+  margin-bottom: 0;
+}
+
+.rp-skill-name {
+  font-weight: 600;
+  color: var(--rp-title-color);
+  font-size: var(--rp-small);
+}
+
+.rp-skill-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 0;
+}
+
+.rp-skill-item {
+  display: inline-flex;
+  align-items: center;
+}
+
+.rp-skill-item:not(:last-child)::after {
+  content: "·";
+  margin: 0 6px;
+  color: var(--rp-muted);
+  opacity: 0.7;
+}
+
+.rp-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+}
+
+.rp-chip {
+  font-size: var(--rp-tiny);
+  padding: 1.5px 7px;
+  border: 1px solid var(--rp-chip-border);
+  border-radius: 2px;
+  background: var(--rp-chip-bg);
+  color: var(--rp-chip-text);
+  line-height: 1.5;
+}
+
+.rp-skill-cols {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  column-gap: 14px;
+}
+
+.rp-skill-row {
+  display: flex;
+  gap: 6px;
+  justify-content: space-between;
+  border-bottom: 1px dotted var(--rp-rule-color);
+  padding: 1px 0;
+}
+
+/* languages */
+.rp-lang-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 1px 0;
+}
+
+.rp-dots {
+  display: inline-flex;
+  gap: 3px;
+}
+
+.rp-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--rp-rule-color);
+}
+
+.rp-dot.is-on {
+  background: var(--rp-accent);
+}
+
+/* publications, academic */
+.rp-pub {
+  padding-left: 16px;
+  text-indent: -16px;
+  padding-bottom: var(--rp-entry-gap);
+}
+
+.rp-pub:last-child {
+  padding-bottom: 0;
+}
+
+/* ------------------------------------------------------------------ timeline */
+
+.rp-timeline .rp-entry {
+  position: relative;
+  margin-left: 9px;
+  padding-left: 16px;
+  border-left: 1px solid var(--rp-rule-color);
+  padding-bottom: calc(var(--rp-entry-gap) + 2px);
+}
+
+.rp-timeline .rp-entry::before {
+  content: "";
+  position: absolute;
+  left: -3.5px;
+  top: 3px;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--rp-accent);
+}
+
+.rp-timeline .rp-entry:last-child {
+  border-left-color: transparent;
+}
+
+/* ------------------------------------------------------------------ inline runs */
+
+.rp-inline-sep {
+  color: var(--rp-muted);
+  opacity: 0.6;
+  margin: 0 5px;
+}
+
+.rp-muted {
+  color: var(--rp-muted);
+}
+
+.rp-empty {
+  color: var(--rp-muted);
+  font-style: italic;
+  font-size: var(--rp-small);
+}
+
+/* ------------------------------------------------------------------ editor chrome */
+
+.rp-page-label {
+  font-family: ui-monospace, "SF Mono", Menlo, monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6b7280;
+}
+
+.rp-shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(to bottom, transparent 82%, rgba(255, 255, 255, 0.96));
+}
+
+/* ------------------------------------------------------------------ printing */
+
+@media print {
+  @page {
+    margin: 0;
+  }
+
+  html,
+  body {
+    background: #fff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  .rp-print-hide {
+    display: none !important;
+  }
+
+  .rp-print-sheet {
+    box-shadow: none !important;
+    margin: 0 !important;
+    border: none !important;
+    transform: none !important;
+    zoom: 1 !important;
+  }
+
+  .rp-page {
+    break-after: page;
+    page-break-after: always;
+    box-shadow: none !important;
+    border: none !important;
+    margin: 0 !important;
+  }
+
+  .rp-page:last-of-type {
+    break-after: auto;
+    page-break-after: auto;
+  }
+}
+
+.rp-col--side .rp-entry-date {
+  white-space: normal;
+  text-align: right;
+}
