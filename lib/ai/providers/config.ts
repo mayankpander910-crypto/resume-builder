@@ -1,14 +1,13 @@
+
 import type { ProviderConfig, ProviderId } from "@/lib/ai/types";
 
 /**
- * Provider catalogue.
+ * AI Provider Catalogue
  *
- * Only officially documented, key-based HTTP APIs are used. Every provider
- * exposes an OpenAI-compatible `/chat/completions` endpoint except Google
- * Gemini, which uses its own `generateContent` shape.
+ * Uses officially documented API endpoints.
+ * API keys are read server-side only.
  *
- * Free-tier notes are deliberately conservative: quotas and model availability
- * change. Treat everything below as "check the link before relying on it".
+ * Models can be overridden using environment variables.
  */
 export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
   gemini: {
@@ -21,20 +20,24 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     envModelKey: "GEMINI_MODEL",
     timeoutMs: 28_000,
     docsUrl: "https://ai.google.dev/gemini-api/docs",
-    freeTier: "Gemini API has a free tier with per-minute and per-day rate limits; limits vary by model.",
+    freeTier:
+      "Gemini API offers a free tier with model-specific request and token limits. Check current availability and quotas.",
   },
+
   groq: {
     id: "groq",
     label: "Groq",
     kind: "openai",
     endpoint: "https://api.groq.com/openai/v1/chat/completions",
-    model: "llama-3.3-70b-versatile",
+    model: "openai/gpt-oss-120b",
     envKey: "GROQ_API_KEY",
     envModelKey: "GROQ_MODEL",
     timeoutMs: 24_000,
     docsUrl: "https://console.groq.com/docs/openai",
-    freeTier: "Groq offers a free developer tier with request and token rate limits per model.",
+    freeTier:
+      "Groq provides developer API access with model-specific request and token limits.",
   },
+
   openrouter: {
     id: "openrouter",
     label: "OpenRouter",
@@ -45,8 +48,10 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     envModelKey: "OPENROUTER_MODEL",
     timeoutMs: 30_000,
     docsUrl: "https://openrouter.ai/docs/api-reference/overview",
-    freeTier: "OpenRouter lists `:free` model variants with lower rate limits; paid credits are optional.",
+    freeTier:
+      "OpenRouter offers selected free model variants subject to availability and rate limits.",
   },
+
   cerebras: {
     id: "cerebras",
     label: "Cerebras",
@@ -57,8 +62,10 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     envModelKey: "CEREBRAS_MODEL",
     timeoutMs: 24_000,
     docsUrl: "https://inference-docs.cerebras.ai/api-reference/chat-completions",
-    freeTier: "Cerebras Cloud offers a free developer tier with rate limits; see their pricing page for current terms.",
+    freeTier:
+      "Cerebras Cloud provides developer access subject to current model availability and usage limits.",
   },
+
   huggingface: {
     id: "huggingface",
     label: "Hugging Face",
@@ -69,32 +76,104 @@ export const PROVIDERS: Record<ProviderId, ProviderConfig> = {
     envModelKey: "HUGGINGFACE_MODEL",
     timeoutMs: 30_000,
     docsUrl: "https://huggingface.co/docs/inference-providers",
-    freeTier: "Inference Providers include monthly credits for signed-in accounts; overage requires payment.",
+    freeTier:
+      "Hugging Face Inference Providers offer usage subject to account credits and provider-specific limits.",
   },
 };
 
-export const DEFAULT_ORDER: ProviderId[] = ["gemini", "groq", "openrouter", "cerebras", "huggingface"];
+/**
+ * Default provider fallback order.
+ *
+ * Providers without API keys are automatically skipped.
+ */
+export const DEFAULT_ORDER: ProviderId[] = [
+  "gemini",
+  "groq",
+  "openrouter",
+  "cerebras",
+  "huggingface",
+];
 
-const isProviderId = (value: string): value is ProviderId => value in PROVIDERS;
+/**
+ * Validates a provider ID.
+ */
+const isProviderId = (value: string): value is ProviderId => {
+  return Object.prototype.hasOwnProperty.call(PROVIDERS, value);
+};
 
-/** Provider order from `AI_PROVIDER_ORDER`, falling back to the default chain. */
-export const resolveProviderOrder = (env: NodeJS.ProcessEnv = process.env): ProviderId[] => {
+/**
+ * Resolves provider order from environment variables.
+ *
+ * Example:
+ * AI_PROVIDER_ORDER=gemini,groq,openrouter
+ */
+export const resolveProviderOrder = (
+  env: NodeJS.ProcessEnv = process.env
+): ProviderId[] => {
   const raw = env.AI_PROVIDER_ORDER?.trim();
-  if (!raw) return [...DEFAULT_ORDER];
+
+  if (!raw) {
+    return [...DEFAULT_ORDER];
+  }
+
   const parsed = raw
     .split(",")
     .map((token) => token.trim().toLowerCase())
     .filter(isProviderId);
-  return parsed.length ? Array.from(new Set(parsed)) : [...DEFAULT_ORDER];
+
+  return parsed.length
+    ? Array.from(new Set(parsed))
+    : [...DEFAULT_ORDER];
 };
 
-export const providerModel = (config: ProviderConfig, env: NodeJS.ProcessEnv = process.env): string =>
-  env[config.envModelKey]?.trim() || config.model;
+/**
+ * Gets the model configured for a provider.
+ *
+ * Environment variables take priority over defaults.
+ */
+export const providerModel = (
+  config: ProviderConfig,
+  env: NodeJS.ProcessEnv = process.env
+): string => {
+  const customModel = env[config.envModelKey]?.trim();
 
-export const providerKey = (config: ProviderConfig, env: NodeJS.ProcessEnv = process.env): string | undefined => {
-  const value = env[config.envKey];
-  return value && value.trim().length > 4 ? value.trim() : undefined;
+  return customModel || config.model;
 };
 
-export const configuredProviders = (env: NodeJS.ProcessEnv = process.env): ProviderId[] =>
-  resolveProviderOrder(env).filter((id) => Boolean(providerKey(PROVIDERS[id], env)));
+/**
+ * Gets a provider API key.
+ *
+ * Empty or missing keys are treated as unconfigured.
+ */
+export const providerKey = (
+  config: ProviderConfig,
+  env: NodeJS.ProcessEnv = process.env
+): string | undefined => {
+  const value = env[config.envKey]?.trim();
+
+  if (!value || value.length <= 4) {
+    return undefined;
+  }
+
+  return value;
+};
+
+/**
+ * Returns providers that have configured API keys.
+ */
+export const configuredProviders = (
+  env: NodeJS.ProcessEnv = process.env
+): ProviderId[] => {
+  return resolveProviderOrder(env).filter((id) =>
+    Boolean(providerKey(PROVIDERS[id], env))
+  );
+};
+
+/**
+ * Returns the configuration for a provider.
+ */
+export const getProviderConfig = (
+  id: ProviderId
+): ProviderConfig => {
+  return PROVIDERS[id];
+};
