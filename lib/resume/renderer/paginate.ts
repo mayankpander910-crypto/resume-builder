@@ -1,10 +1,14 @@
+
 /**
- * Block pagination.
+ * Block pagination engine.
  *
- * The renderer emits a flat list of measurable blocks per column. This pure
- * function decides which blocks land on which page, so preview, print and PDF
- * are three views of one layout decision. Heights are supplied by the caller
- * (measured in the browser; synthetic in tests).
+ * The renderer produces a flat list of measurable blocks per column.
+ * This module distributes those blocks across pages.
+ *
+ * Preview, print and PDF should use the same pagination result.
+ *
+ * Blocks are atomic: this engine moves complete blocks between pages.
+ * It does not split an individual block internally.
  */
 
 export interface BlockSpec {
@@ -18,115 +22,253 @@ export interface PlacedBlock {
   key: string;
   sectionId: string;
   isHead: boolean;
-  /** True when the head was re-emitted at the top of a continuation page. */
   continued: boolean;
   height: number;
 }
 
 export interface PaginatedColumn {
-  /** One entry per page, in page order. */
   pages: PlacedBlock[][];
 }
 
 export interface PaginateOptions {
-  /** Height available on the first page after the header has been laid out. */
   firstPageHeight: number;
-  /** Height available on every subsequent page. */
   pageHeight: number;
-  /** Guard against pathological input. */
   maxPages?: number;
 }
 
-/**
- * Paginate one column. A section head is never left alone at the bottom of a
- * page (it carries a look-ahead for its first block), and a section that
- * continues onto a new page re-emits its head as a continuation marker so the
- * reader always knows which section they are in.
- */
-export const paginateColumn = (blocks: BlockSpec[], options: PaginateOptions): PaginatedColumn => {
-  const { firstPageHeight, pageHeight } = options;
-  const maxPages = options.maxPages ?? 40;
-  const usable: BlockSpec[][] = [];
-  let current: BlockSpec[] = [];
-  let used = 0;
-  let capacity = Math.max(firstPageHeight, 80);
+const MIN_PAGE_HEIGHT = 80;
+const DEFAULT_MAX_PAGES = 40;
 
-  const heads = new Map<string, BlockSpec>();
+function normalizeHeight(height: number): number {
+  if (!Number.isFinite(height)) return 0;
+  return Math.max(0, height);
+}
+
+function markContinuations(
+  pages: BlockSpec[][]
+): PlacedBlock[][] {
+  const seenHeadings = new Set<string>();
+
+  return pages.map((page) => {
+    return page.map((block) => {
+      const continued =
+        block.isHead &&
+        seenHeadings.has(block.sectionId);
+
+      if (block.isHead) {
+        seenHeadings.add(block.sectionId);
+      }
+
+      return {
+        key: continued ? `${block.key}__cont` : block.key,
+        sectionId: block.sectionId,
+        isHead: block.isHead,
+        continued,
+        height: normalizeHeight(block.height),
+      };
+    });
+  });
+}
+
+/**
+ * Paginate a single resume column.
+ */
+export const paginateColumn = (
+  blocks: BlockSpec[],
+  options: PaginateOptions
+): PaginatedColumn => {
+  const maxPages = Math.max(
+    1,
+    Math.floor(options.maxPages ?? DEFAULT_MAX_PAGES)
+  );
+
+  const firstCapacity = Math.max(
+    normalizeHeight(options.firstPageHeight),
+    MIN_PAGE_HEIGHT
+  );
+
+  const nextCapacity = Math.max(
+    normalizeHeight(options.pageHeight),
+    MIN_PAGE_HEIGHT
+  );
+
+  if (blocks.length === 0) {
+    return { pages: [[]] };
+  }
+
+  const pages: BlockSpec[][] = [];
+
+  let currentPage: BlockSpec[] = [];
+  let usedHeight = 0;
+  let capacity = firstCapacity;
+
+  const sectionHeads = new Map<string, BlockSpec>();
+
   for (const block of blocks) {
-    if (block.isHead && !heads.has(block.sectionId)) heads.set(block.sectionId, block);
+    if (block.isHead && !sectionHeads.has(block.sectionId)) {
+      sectionHeads.set(block.sectionId, block);
+    }
   }
 
   const pushPage = () => {
-    usable.push(current);
-    current = [];
-    used = 0;
-    capacity = Math.max(pageHeight, 80);
+    if (currentPage.length > 0) {
+      pages.push(currentPage);
+    }
+
+    currentPage = [];
+    usedHeight = 0;
+    capacity = nextCapacity;
   };
 
-  for (let i = 0; i < blocks.length; i += 1) {
-    const block = blocks[i];
+  const addBlock = (block: BlockSpec) => {
+    currentPage.push(block);
+    usedHeight += normalizeHeight(block.height);
+  };
+
+  const hasHeading = (sectionId: string) => {
+    return currentPage.some(
+      (block) =>
+        block.isHead &&
+        block.sectionId === sectionId
+    );
+  };
+
+  const addContinuationHeading = (sectionId: string) => {
+    const heading = sectionHeads.get(sectionId);
+
+    if (!heading || hasHeading(sectionId)) return;
+
+    addBlock(heading);
+  };
+
+  /**
+   * Move a heading to the next page when there is not
+   * enough room for the heading and a reasonable portion
+   * of its first content block.
+   */
+  const shouldMoveHeading = (
+    heading: BlockSpec,
+    nextBlock?: BlockSpec
+  ) => {
+    if (!nextBlock || currentPage.length === 0) {
+      return false;
+    }
+
+    const headingHeight = normalizeHeight(heading.height);
+    const nextHeight = normalizeHeight(nextBlock.height);
+
+    const lookahead = Math.min(
+      nextHeight,
+      capacity * 0.5
+    );
+
+    const requiredHeight = headingHeight + lookahead;
+    const remainingHeight = capacity - usedHeight;
+
+    return requiredHeight > remainingHeight;
+  };
+
+  for (let index = 0; index < blocks.length; index += 1) {
+    const block = blocks[index];
+    const blockHeight = normalizeHeight(block.height);
+
+    // --------------------------------------------
+    // SECTION HEADING
+    // --------------------------------------------
 
     if (block.isHead) {
-      const next = blocks[i + 1];
-      const lookahead = next ? next.height : 0;
-      const needed = block.height + Math.min(lookahead, capacity * 0.5);
-      if (used > 0 && used + needed > capacity) {
+      const nextBlock = blocks[index + 1];
+
+      if (shouldMoveHeading(block, nextBlock)) {
         pushPage();
       }
-      current.push(block);
-      used += block.height;
+
+      if (!hasHeading(block.sectionId)) {
+        addBlock(block);
+      }
+
       continue;
     }
 
-    if (used + block.height > capacity) {
-      const fitsAlone = block.height <= capacity;
-      if (used > 0 && fitsAlone) {
-        pushPage();
-        const head = heads.get(block.sectionId);
-        if (head) {
-          current.push({ ...head });
-          used += head.height;
-        }
-      } else if (used === 0 && !fitsAlone) {
-        // A single block taller than a page: place it and let it clip rather
-        // than loop forever. Rare in practice (one job = >1 page of bullets).
-        current.push(block);
-        used += block.height;
-        continue;
-      }
+    // --------------------------------------------
+    // NORMAL CONTENT BLOCK
+    // --------------------------------------------
+
+    const remainingHeight = capacity - usedHeight;
+
+    if (blockHeight <= remainingHeight) {
+      addBlock(block);
+      continue;
     }
 
-    current.push(block);
-    used += block.height;
+    // --------------------------------------------
+    // BLOCK DOES NOT FIT CURRENT PAGE
+    // --------------------------------------------
 
-    if (usable.length >= maxPages) break;
+    if (currentPage.length > 0) {
+      pushPage();
+
+      // Repeat the heading if this section continues.
+      addContinuationHeading(block.sectionId);
+
+      /**
+       * Place the block intact.
+       *
+       * If the repeated heading and block together exceed
+       * the available height, the block may overflow.
+       * The renderer must handle oversized blocks.
+       */
+      addBlock(block);
+      continue;
+    }
+
+    // --------------------------------------------
+    // EMPTY PAGE
+    // --------------------------------------------
+
+    /**
+     * The block is taller than a fresh page.
+     * Keep it intact rather than dropping its content.
+     */
+    addBlock(block);
   }
 
-  if (current.length > 0 || usable.length === 0) usable.push(current);
+  if (currentPage.length > 0 || pages.length === 0) {
+    pages.push(currentPage);
+  }
 
-  // Convert to placed blocks, marking re-emitted heads as continuations.
-  const seenHead = new Set<string>();
-  const pages = usable.map((pageBlocks) => {
-    const placed: PlacedBlock[] = [];
-    let previousSection: string | null = null;
-    for (const block of pageBlocks) {
-      const isContinuation = block.isHead && seenHead.has(block.sectionId);
-      if (block.isHead) seenHead.add(block.sectionId);
-      placed.push({
-        key: isContinuation ? `${block.key}__cont` : block.key,
-        sectionId: block.sectionId,
-        isHead: block.isHead,
-        continued: isContinuation,
-        height: block.height,
-      });
-      previousSection = block.sectionId;
-    }
-    void previousSection;
-    return placed;
-  });
+  // --------------------------------------------
+  // MAX PAGE GUARD
+  // --------------------------------------------
 
-  return { pages };
+  /**
+   * The page limit is a safety guard, not permission
+   * to discard content.
+   *
+   * Merge all excess pages into the final allowed page.
+   * This preserves every block without duplicating the
+   * previous final page.
+   */
+  let resultPages = pages;
+
+  if (pages.length > maxPages) {
+    const limitedPages = pages.slice(0, maxPages);
+
+    const remainingPages = pages.slice(maxPages - 1);
+
+    limitedPages[maxPages - 1] = remainingPages.flat();
+
+    resultPages = limitedPages;
+  }
+
+  return {
+    pages: markContinuations(resultPages),
+  };
 };
+
+// ==================================================
+// DOCUMENT PAGINATION
+// ==================================================
 
 export interface DocumentPagination {
   pageCount: number;
@@ -134,20 +276,55 @@ export interface DocumentPagination {
   side: PaginatedColumn;
 }
 
+/**
+ * Paginate the main and secondary columns.
+ *
+ * Both columns share the same page dimensions and
+ * first-page header reservation.
+ */
 export const paginateDocument = (input: {
   main: BlockSpec[];
   side: BlockSpec[];
   headerHeight: number;
   pageHeight: number;
-  /** Extra breathing room between the header and the first column block. */
   headerGap?: number;
 }): DocumentPagination => {
-  const gap = input.headerGap ?? 0;
-  const firstCap = Math.max(input.pageHeight - input.headerHeight - gap, 80);
-  const main = paginateColumn(input.main, { firstPageHeight: firstCap, pageHeight: input.pageHeight });
-  const side = input.side.length
-    ? paginateColumn(input.side, { firstPageHeight: firstCap, pageHeight: input.pageHeight })
-    : { pages: [] as PlacedBlock[][] };
-  const pageCount = Math.max(main.pages.length, side.pages.length, 1);
-  return { pageCount, main, side };
+  const headerHeight = normalizeHeight(input.headerHeight);
+  const headerGap = normalizeHeight(input.headerGap ?? 0);
+
+  const pageHeight = Math.max(
+    MIN_PAGE_HEIGHT,
+    normalizeHeight(input.pageHeight)
+  );
+
+  const firstPageHeight = Math.max(
+    pageHeight - headerHeight - headerGap,
+    MIN_PAGE_HEIGHT
+  );
+
+  const main = paginateColumn(input.main, {
+    firstPageHeight,
+    pageHeight,
+  });
+
+  const side: PaginatedColumn = input.side.length
+    ? paginateColumn(input.side, {
+        firstPageHeight,
+        pageHeight,
+      })
+    : {
+        pages: [],
+      };
+
+  const pageCount = Math.max(
+    main.pages.length,
+    side.pages.length,
+    1
+  );
+
+  return {
+    pageCount,
+    main,
+    side,
+  };
 };
