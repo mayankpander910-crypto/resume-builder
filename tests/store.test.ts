@@ -83,6 +83,53 @@ describe("editor store", () => {
     expect(after.slice().sort()).toEqual(initial.slice().sort());
   });
 
+  it("initializes and preserves positions for free-position sections", () => {
+    const sections = useResumeStore.getState().doc.sections;
+    const first = sections[0];
+    const second = sections[1];
+    if (!first || !second) throw new Error("Expected starter sections");
+
+    useResumeStore.getState().setPositioningMode("free");
+    useResumeStore.getState().initializeCanvasPositions([
+      { id: first.id, position: { page: 0, x: 24, y: 12 } },
+      { id: second.id, position: { page: 1, x: 38, y: 44 } },
+    ]);
+
+    const positioned = useResumeStore.getState().doc.sections;
+    expect(positioned.find((section) => section.id === first.id)?.position)
+      .toMatchObject({ page: 0, x: 24, y: 12 });
+    expect(positioned.find((section) => section.id === second.id)?.position)
+      .toMatchObject({ page: 1, x: 38, y: 44 });
+
+    useResumeStore.getState().initializeCanvasPositions([
+      { id: first.id, position: { page: 4, x: 0, y: 0 } },
+    ]);
+    expect(
+      useResumeStore.getState().doc.sections.find((section) => section.id === first.id)
+        ?.position?.x
+    ).toBe(24);
+  });
+
+  it("stores formatting through section updates and supports undo", () => {
+    const section = useResumeStore.getState().doc.sections[0];
+    if (!section) throw new Error("Expected a starter section");
+
+    useResumeStore.getState().updateSection(section.id, (draft) => {
+      draft.textStyle = { bold: true, textAlign: "center" };
+    });
+
+    expect(
+      useResumeStore.getState().doc.sections.find((item) => item.id === section.id)
+        ?.textStyle
+    ).toEqual({ bold: true, textAlign: "center" });
+
+    useResumeStore.getState().undo();
+    expect(
+      useResumeStore.getState().doc.sections.find((item) => item.id === section.id)
+        ?.textStyle
+    ).toBeUndefined();
+  });
+
   it("hides and restores a section without deleting it", () => {
     const id = useResumeStore.getState().doc.sections[0].id;
     useResumeStore.getState().toggleSection(id);

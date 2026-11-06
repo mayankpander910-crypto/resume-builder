@@ -5,8 +5,6 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowLeft,
-  ArrowUpRight,
-  Check,
   Cloud,
   Download,
   Eye,
@@ -20,10 +18,8 @@ import {
   Upload,
   MoreHorizontal,
   RotateCcw,
-  PanelsTopLeft,
   Loader2,
   AlertCircle,
-  Menu,
   X,
 } from "lucide-react";
 import { toast } from "sonner";
@@ -51,9 +47,6 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/overlay";
-
-import { useMediaQuery } from "@/lib/utils/use-media";
-import { cn } from "@/lib/utils/cn";
 
 const AUTOSAVE_DELAY = 700;
 
@@ -83,19 +76,16 @@ export function EditorShell() {
   const [aiOpen, setAiOpen] = useState(false);
   const [aiTarget, setAiTarget] = useState<AiTarget | null>(null);
 
+  const [contentDrawer, setContentDrawer] = useState(false);
   const [designDrawer, setDesignDrawer] = useState(false);
-  const [mobileTab, setMobileTab] = useState<"content" | "canvas">("canvas");
 
   const [hydrated, setHydrated] = useState(false);
   const [pageCount, setPageCount] = useState(1);
 
-  const isWide = useMediaQuery("(min-width: 1280px)", true);
-  const isDesktop = useMediaQuery("(min-width: 1024px)", true);
-
   const template = getTemplate(doc.meta.templateId);
   const firstRender = useRef(true);
 
-  // Initialize the editor.
+  // Initialize editor.
   useEffect(() => {
     hydrate();
     setHydrated(true);
@@ -162,6 +152,8 @@ export function EditorShell() {
   // Open AI panel.
   const openAi = useCallback((target: AiTarget | null) => {
     setAiTarget(target);
+    setContentDrawer(false);
+    setDesignDrawer(false);
     setAiOpen(true);
   }, []);
 
@@ -292,21 +284,18 @@ export function EditorShell() {
 
   return (
     <TooltipProvider>
-      <div className="flex h-[100dvh] flex-col overflow-hidden bg-canvas">
+      <div className="flex h-[100dvh] flex-col overflow-hidden bg-[#efede7]">
 
-        {/* ================================================== */}
         {/* TOP TOOLBAR */}
-        {/* ================================================== */}
+        <header className="relative z-30 flex h-[62px] shrink-0 items-center justify-between gap-2 border-b border-black/[0.06] bg-white px-3 sm:px-5">
 
-        <header className="relative z-30 flex h-[60px] shrink-0 items-center justify-between gap-3 border-b border-line bg-surface px-3 sm:px-5">
-
-          {/* Left: Back, document name and save status */}
+          {/* Left side */}
           <div className="flex min-w-0 items-center gap-2 sm:gap-3">
 
             <Tooltip label="Back to website">
               <Link
                 href="/"
-                className="grid size-9 shrink-0 place-items-center rounded-lg text-subtle transition-colors hover:bg-surface-2 hover:text-ink"
+                className="grid size-9 shrink-0 place-items-center rounded-xl text-subtle transition-colors hover:bg-surface-2 hover:text-ink"
               >
                 <ArrowLeft className="size-[18px]" />
               </Link>
@@ -321,7 +310,7 @@ export function EditorShell() {
                   setDocumentName(event.target.value)
                 }
                 aria-label="Resume name"
-                className="w-[115px] truncate rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[13px] font-semibold text-ink outline-none transition-colors hover:border-line focus-visible:border-accent sm:w-[180px]"
+                className="w-[105px] truncate rounded-md border border-transparent bg-transparent px-1 py-0.5 text-[13px] font-semibold text-ink outline-none transition-colors hover:border-line focus-visible:border-accent sm:w-[180px]"
               />
 
               <span className="flex items-center gap-1.5 px-1 text-[10px] text-subtle">
@@ -339,7 +328,6 @@ export function EditorShell() {
               </span>
             </div>
 
-            {/* Undo and redo */}
             <div className="ml-1 hidden items-center gap-1 border-l border-line pl-2 sm:flex">
               <Tooltip label="Undo (Ctrl + Z)">
                 <button
@@ -367,9 +355,8 @@ export function EditorShell() {
             </div>
           </div>
 
-          {/* Center: Document actions */}
+          {/* Center actions */}
           <div className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-1 lg:flex">
-
             <Button
               variant="ghost"
               size="sm"
@@ -401,28 +388,40 @@ export function EditorShell() {
             </Button>
           </div>
 
-          {/* Right: Main actions */}
-          <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+          {/* Right actions */}
+          <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
 
-            <Badge
-              tone="neutral"
-              className="hidden md:inline-flex"
-            >
+            <Badge tone="neutral" className="hidden md:inline-flex">
               {pageCount} {pageCount === 1 ? "page" : "pages"}
             </Badge>
 
-            {!isWide && (
-              <Tooltip label="Design settings">
-                <button
-                  type="button"
-                  onClick={() => setDesignDrawer(true)}
-                  aria-label="Open design settings"
-                  className="grid size-9 place-items-center rounded-lg text-subtle transition-colors hover:bg-surface-2 hover:text-ink"
-                >
-                  <SlidersHorizontal className="size-[17px]" />
-                </button>
-              </Tooltip>
-            )}
+            <Tooltip label="Edit content">
+              <button
+                type="button"
+                onClick={() => {
+                  setContentDrawer(true);
+                  setDesignDrawer(false);
+                }}
+                aria-label="Open content editor"
+                className="grid size-9 place-items-center rounded-xl text-subtle transition-colors hover:bg-surface-2 hover:text-ink"
+              >
+                <FileText className="size-[17px]" />
+              </button>
+            </Tooltip>
+
+            <Tooltip label="Design settings">
+              <button
+                type="button"
+                onClick={() => {
+                  setDesignDrawer(true);
+                  setContentDrawer(false);
+                }}
+                aria-label="Open design settings"
+                className="grid size-9 place-items-center rounded-xl text-subtle transition-colors hover:bg-surface-2 hover:text-ink"
+              >
+                <SlidersHorizontal className="size-[17px]" />
+              </button>
+            </Tooltip>
 
             <Button
               variant={aiOpen ? "subtle" : "ghost"}
@@ -435,13 +434,12 @@ export function EditorShell() {
               <span className="sm:hidden">AI</span>
             </Button>
 
-            {/* More menu */}
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <button
                   type="button"
                   aria-label="More document actions"
-                  className="grid size-9 place-items-center rounded-lg text-subtle transition-colors hover:bg-surface-2 hover:text-ink"
+                  className="grid size-9 place-items-center rounded-xl text-subtle transition-colors hover:bg-surface-2 hover:text-ink"
                 >
                   <MoreHorizontal className="size-[18px]" />
                 </button>
@@ -452,23 +450,17 @@ export function EditorShell() {
                   Resume options
                 </DropdownMenuLabel>
 
-                <DropdownMenuItem
-                  onSelect={() => setTemplateOpen(true)}
-                >
+                <DropdownMenuItem onSelect={() => setTemplateOpen(true)}>
                   <LayoutTemplate />
                   Change template
                 </DropdownMenuItem>
 
-                <DropdownMenuItem
-                  onSelect={() => setImportOpen(true)}
-                >
+                <DropdownMenuItem onSelect={() => setImportOpen(true)}>
                   <Upload />
                   Import resume
                 </DropdownMenuItem>
 
-                <DropdownMenuItem
-                  onSelect={() => setPreviewOpen(true)}
-                >
+                <DropdownMenuItem onSelect={() => setPreviewOpen(true)}>
                   <Eye />
                   Full preview
                 </DropdownMenuItem>
@@ -490,9 +482,7 @@ export function EditorShell() {
                 <DropdownMenuItem
                   onSelect={() => {
                     loadSample();
-                    toast.success(
-                      "Sample content loaded — replace it with your own."
-                    );
+                    toast.success("Sample content loaded — replace it with your own.");
                   }}
                 >
                   <Sparkles />
@@ -501,11 +491,7 @@ export function EditorShell() {
 
                 <DropdownMenuItem
                   onSelect={() => {
-                    if (
-                      !window.confirm(
-                        "Start over with a blank resume?"
-                      )
-                    ) {
+                    if (!window.confirm("Start over with a blank resume?")) {
                       return;
                     }
 
@@ -531,8 +517,7 @@ export function EditorShell() {
 
                     clearStored();
                     resetToBlank();
-
-                    toast.success("Local resume deleted.");
+                    toast.success("Local resume data cleared.");
                   }}
                 >
                   <RotateCcw />
@@ -541,7 +526,6 @@ export function EditorShell() {
               </DropdownMenuContent>
             </DropdownMenu>
 
-            {/* Download */}
             <Button
               variant="primary"
               size="sm"
@@ -551,123 +535,82 @@ export function EditorShell() {
               className="h-9 gap-1.5 px-3 sm:px-4"
             >
               <Download className="size-4" />
-
-              <span className="hidden sm:inline">
-                Download PDF
-              </span>
-
-              <span className="sm:hidden">
-                PDF
-              </span>
+              <span className="hidden sm:inline">Download PDF</span>
+              <span className="sm:hidden">PDF</span>
             </Button>
           </div>
         </header>
 
-        {/* ================================================== */}
-        {/* MAIN EDITOR WORKSPACE */}
-        {/* ================================================== */}
+        {/* CANVAS WORKSPACE */}
+        <main className="relative min-h-0 min-w-0 flex-1 overflow-hidden bg-[#efede7]">
 
-        <div className="flex min-h-0 flex-1 overflow-hidden">
+          <CanvasPanel
+            onPageCount={setPageCount}
+            onUndo={undo}
+            onRedo={redo}
+            canUndo={past.length > 0}
+            canRedo={future.length > 0}
+            onOpenContent={() => {
+              setContentDrawer(true);
+              setDesignDrawer(false);
+            }}
+            onOpenDesign={() => {
+              setDesignDrawer(true);
+              setContentDrawer(false);
+            }}
+          />
+        </main>
 
-          {/* LEFT: CONTENT PANEL */}
-          <aside
-            className={cn(
-              "min-h-0 w-full shrink-0 overflow-hidden",
-              "border-r border-line bg-surface",
-              "lg:w-[320px] xl:w-[330px]",
-              !isDesktop &&
-                mobileTab !== "content" &&
-                "hidden",
-              isDesktop && "flex"
-            )}
+        {/* CONTENT DRAWER */}
+        {contentDrawer && (
+          <div
+            className="fixed inset-0 z-40 flex bg-black/30 backdrop-blur-[2px]"
+            onClick={() => setContentDrawer(false)}
           >
-            <ContentPanel
-              onAi={(payload) => openAi(payload)}
-            />
-          </aside>
-
-          {/* CENTER: RESUME CANVAS */}
-          <main
-            className={cn(
-              "relative min-h-0 min-w-0 flex-1 overflow-hidden",
-              !isDesktop &&
-                mobileTab !== "canvas" &&
-                "hidden"
-            )}
-          >
-            <CanvasPanel onPageCount={setPageCount} />
-          </main>
-
-          {/* RIGHT: DESIGN PANEL */}
-          {isWide && (
-            <aside className="hidden w-[290px] shrink-0 overflow-hidden border-l border-line bg-surface xl:flex xl:flex-col">
-              <DesignPanel
-                onChangeTemplate={() => setTemplateOpen(true)}
-              />
-            </aside>
-          )}
-        </div>
-
-        {/* ================================================== */}
-        {/* MOBILE BOTTOM NAVIGATION */}
-        {/* ================================================== */}
-
-        {!isDesktop && (
-          <nav className="z-30 flex h-[58px] shrink-0 items-center justify-around border-t border-line bg-surface px-3">
-
-            <button
-              type="button"
-              onClick={() => setMobileTab("content")}
-              className={cn(
-                "flex min-w-[90px] flex-col items-center justify-center gap-1 rounded-lg px-4 py-1.5 text-[10px] font-medium transition-colors",
-                mobileTab === "content"
-                  ? "text-accent"
-                  : "text-subtle"
-              )}
+            <div
+              className="editor-drawer flex h-full w-[380px] max-w-[92vw] flex-col border-r border-line bg-surface shadow-2xl"
+              onClick={(event) => event.stopPropagation()}
             >
-              <FileText className="size-[18px]" />
-              Content
-            </button>
+              <div className="flex h-[60px] shrink-0 items-center justify-between border-b border-line px-4">
+                <div>
+                  <p className="text-sm font-semibold text-ink">
+                    Resume content
+                  </p>
+                  <p className="text-[11px] text-subtle">
+                    Edit your information and sections
+                  </p>
+                </div>
 
-            <button
-              type="button"
-              onClick={() => setMobileTab("canvas")}
-              className={cn(
-                "flex min-w-[90px] flex-col items-center justify-center gap-1 rounded-lg px-4 py-1.5 text-[10px] font-medium transition-colors",
-                mobileTab === "canvas"
-                  ? "text-accent"
-                  : "text-subtle"
-              )}
-            >
-              <PanelsTopLeft className="size-[18px]" />
-              Preview
-            </button>
+                <button
+                  type="button"
+                  onClick={() => setContentDrawer(false)}
+                  aria-label="Close content editor"
+                  className="grid size-9 place-items-center rounded-lg text-subtle hover:bg-surface-2 hover:text-ink"
+                >
+                  <X className="size-4" />
+                </button>
+              </div>
 
-            <button
-              type="button"
-              onClick={() => setDesignDrawer(true)}
-              className="flex min-w-[90px] flex-col items-center justify-center gap-1 rounded-lg px-4 py-1.5 text-[10px] font-medium text-subtle transition-colors hover:text-ink"
-            >
-              <SlidersHorizontal className="size-[18px]" />
-              Design
-            </button>
-          </nav>
+              <div className="min-h-0 flex-1 overflow-hidden">
+                <ContentPanel
+                  onAi={(payload) => openAi(payload)}
+                />
+              </div>
+            </div>
+          </div>
         )}
 
-        {/* ================================================== */}
         {/* DESIGN DRAWER */}
-        {/* ================================================== */}
-
-        {designDrawer && !isWide && (
+        {designDrawer && (
           <div
             className="fixed inset-0 z-40 flex justify-end bg-black/30 backdrop-blur-[2px]"
             onClick={() => setDesignDrawer(false)}
           >
             <div
-              className="flex h-full w-[340px] max-w-[90vw] flex-col bg-surface shadow-2xl"
+              className="editor-drawer flex h-full w-[360px] max-w-[92vw] flex-col border-l border-line bg-surface shadow-2xl"
               onClick={(event) => event.stopPropagation()}
             >
-              <div className="flex h-[58px] shrink-0 items-center justify-between border-b border-line px-4">
+              <div className="flex h-[60px] shrink-0 items-center justify-between border-b border-line px-4">
                 <div>
                   <p className="text-sm font-semibold text-ink">
                     Design settings
@@ -681,7 +624,7 @@ export function EditorShell() {
                   type="button"
                   onClick={() => setDesignDrawer(false)}
                   aria-label="Close design settings"
-                  className="grid size-8 place-items-center rounded-lg text-subtle hover:bg-surface-2 hover:text-ink"
+                  className="grid size-9 place-items-center rounded-lg text-subtle hover:bg-surface-2 hover:text-ink"
                 >
                   <X className="size-4" />
                 </button>
@@ -699,10 +642,7 @@ export function EditorShell() {
           </div>
         )}
 
-        {/* ================================================== */}
         {/* AI DRAWER */}
-        {/* ================================================== */}
-
         {aiOpen && (
           <div
             className="fixed inset-0 z-50 flex justify-end bg-black/30 backdrop-blur-[2px]"
@@ -721,13 +661,9 @@ export function EditorShell() {
           </div>
         )}
 
-        {/* ================================================== */}
         {/* FULL RESUME PREVIEW */}
-        {/* ================================================== */}
-
         {previewOpen && (
           <div className="fixed inset-0 z-50 flex flex-col bg-[#34373b]">
-
             <header className="flex h-[58px] shrink-0 items-center justify-between border-b border-white/10 px-4 text-white sm:px-6">
               <div className="flex min-w-0 flex-col">
                 <span className="truncate text-sm font-semibold">
@@ -747,9 +683,7 @@ export function EditorShell() {
                   }
                 >
                   <Download className="size-3.5" />
-                  <span className="hidden sm:inline">
-                    Print / PDF
-                  </span>
+                  <span className="hidden sm:inline">Print / PDF</span>
                   <span className="sm:hidden">PDF</span>
                 </Button>
 
@@ -777,10 +711,7 @@ export function EditorShell() {
           </div>
         )}
 
-        {/* ================================================== */}
         {/* DIALOGS */}
-        {/* ================================================== */}
-
         <TemplateDialog
           open={templateOpen}
           onOpenChange={setTemplateOpen}
@@ -795,10 +726,6 @@ export function EditorShell() {
   );
 }
 
-// ==================================================
-// EDITOR LOADING SKELETON
-// ==================================================
-
 function EditorSkeleton() {
   return (
     <div
@@ -806,38 +733,14 @@ function EditorSkeleton() {
       aria-busy="true"
       aria-label="Loading the resume editor"
     >
-      <div className="flex h-[60px] shrink-0 items-center gap-3 border-b border-line bg-surface px-4">
+      <div className="flex h-[62px] shrink-0 items-center gap-3 border-b border-line bg-surface px-4">
         <div className="size-9 rounded-lg bg-surface-2" />
         <div className="h-4 w-32 rounded bg-surface-2" />
         <div className="ml-auto h-8 w-28 rounded-lg bg-surface-2" />
       </div>
 
-      <div className="grid min-h-0 flex-1 grid-cols-[320px_minmax(0,1fr)_290px] max-xl:grid-cols-[300px_minmax(0,1fr)] max-lg:grid-cols-1">
-        <div className="hidden space-y-3 border-r border-line bg-surface p-4 lg:block">
-          <div className="h-5 w-28 rounded bg-surface-2" />
-
-          {Array.from({ length: 7 }).map((_, index) => (
-            <div
-              key={index}
-              className="h-10 rounded-lg bg-surface-2"
-            />
-          ))}
-        </div>
-
-        <div className="grid place-items-center bg-canvas p-6">
-          <div className="aspect-[1/1.414] w-full max-w-[520px] rounded-sm border border-line bg-white shadow-[var(--shadow-card)]" />
-        </div>
-
-        <div className="hidden space-y-3 border-l border-line bg-surface p-4 xl:block">
-          <div className="h-5 w-24 rounded bg-surface-2" />
-
-          {Array.from({ length: 7 }).map((_, index) => (
-            <div
-              key={index}
-              className="h-12 rounded-lg bg-surface-2"
-            />
-          ))}
-        </div>
+      <div className="grid min-h-0 flex-1 place-items-center bg-[#efede7] p-6">
+        <div className="aspect-[1/1.414] w-full max-w-[520px] rounded-sm border border-line bg-white shadow-[var(--shadow-card)]" />
       </div>
     </div>
   );

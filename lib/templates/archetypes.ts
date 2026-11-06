@@ -1,11 +1,5 @@
 import type { Archetype, ArchetypeDefinition } from "@/types/template";
 
-/**
- * Structural primitives used by the renderer. Every template resolves to exactly
- * one of these, then differentiates itself through theme tokens, ordering and
- * column configuration — the same way a real design system separates layout from
- * styling.
- */
 export const ARCHETYPES: Record<Archetype, ArchetypeDefinition> = {
   classic: {
     id: "classic",
@@ -169,4 +163,6 @@ export const ARCHETYPES: Record<Archetype, ArchetypeDefinition> = {
   },
 };
 
-export const archetypeOf = (id: Archetype): ArchetypeDefinition => ARCHETYPES[id] ?? ARCHETYPES.classic;
+export const archetypeOf = (
+  id: Archetype
+): ArchetypeDefinition => ARCHETYPES[id] ?? ARCHETYPES.classic;

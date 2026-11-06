@@ -1143,9 +1143,42 @@ export interface TemplateFilters {
   search?: string;
 }
 
+/**
+ * Templates shown in the public gallery.
+ *
+ * Keep the complete TEMPLATES registry above intact: older resumes may still
+ * reference any of its IDs. This allowlist only controls what users see when
+ * browsing and selecting a new template.
+ */
+export const FEATURED_TEMPLATE_IDS = [
+  "meridian",
+  "ledger-classic",
+  "northwind-minimal",
+  "boardroom",
+  "arbor",
+  "balance",
+  "marketline",
+  "stackline",
+  "neural",
+  "campus",
+  "firstclass",
+  "interact",
+  "atelier",
+  "thames",
+  "twofold",
+  "chronology",
+] as const;
+
+const featuredTemplateSet = new Set<string>(FEATURED_TEMPLATE_IDS);
+
+/** The curated 20-template gallery collection. */
+export const GALLERY_TEMPLATES: ResumeTemplate[] = TEMPLATES.filter((template) =>
+  featuredTemplateSet.has(template.id),
+);
+
 export const filterTemplates = (filters: TemplateFilters): ResumeTemplate[] => {
   const q = filters.search?.trim().toLowerCase();
-  return TEMPLATES.filter((t) => {
+  return GALLERY_TEMPLATES.filter((t) => {
     if (filters.category && filters.category !== "all" && t.category !== filters.category) return false;
     if (filters.industry && filters.industry !== "all" && t.industry !== filters.industry) return false;
     if (filters.level && filters.level !== "all" && t.level !== filters.level && t.level !== "any") return false;
@@ -1160,6 +1193,6 @@ export const filterTemplates = (filters: TemplateFilters): ResumeTemplate[] => {
   });
 };
 
-export const TEMPLATE_INDUSTRIES = Array.from(new Set(TEMPLATES.map((t) => t.industry))).sort();
+export const TEMPLATE_INDUSTRIES = Array.from(new Set(GALLERY_TEMPLATES.map((t) => t.industry))).sort();
 export const TEMPLATE_LEVELS: ExperienceLevel[] = ["student", "entry", "mid", "senior", "executive"];
 export const TEMPLATE_STYLES: TemplateStyle[] = ["minimal", "modern", "creative", "corporate", "academic"];

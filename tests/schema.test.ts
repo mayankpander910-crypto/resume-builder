@@ -12,6 +12,36 @@ describe("document schema", () => {
     expect(parsed.sections.length).toBe(doc.sections.length);
   });
 
+  it("accepts persisted section formatting while keeping old documents valid", () => {
+    const doc = createEmptyResume("Formatted");
+    const legacy = resumeDocumentSchema.parse(JSON.parse(JSON.stringify(doc)));
+    expect(legacy.sections[0].textStyle).toBeUndefined();
+
+    const formattedDoc = {
+      ...doc,
+      sections: doc.sections.map((section, index) =>
+        index === 0
+          ? {
+              ...section,
+              textStyle: {
+                bold: true,
+                italic: true,
+                underline: true,
+                textAlign: "center" as const,
+                fontSize: 14,
+                color: "#123456",
+              },
+            }
+          : section
+      ),
+    };
+
+    expect(
+      resumeDocumentSchema.parse(JSON.parse(JSON.stringify(formattedDoc)))
+        .sections[0].textStyle?.fontSize
+    ).toBe(14);
+  });
+
   it("rejects documents that would break the renderer", () => {
     expect(resumeDocumentSchema.safeParse({}).success).toBe(false);
     expect(resumeDocumentSchema.safeParse({ meta: {}, basics: {}, sections: [] }).success).toBe(false);
